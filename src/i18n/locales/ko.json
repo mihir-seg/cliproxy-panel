@@ -1606,6 +1606,18 @@
     "hide_details": "세부 정보 숨기기"
   },
   "quota_management": {
+    "pool_title": "통합 할당량",
+    "pool_accounts": "계정 {{count}}개",
+    "pool_weekly": "주간 한도",
+    "pool_waiting": "계정 확인 중…",
+    "pool_of": "/ {{capacity}}",
+    "pool_next_reset": "다음 초기화",
+    "pool_full": "할당량이 가득 참",
+    "pool_session": "5시간 여유",
+    "pool_session_value": "{{total}}개 중 {{available}}개 계정",
+    "pool_partial": "{{total}}개 중 {{loaded}}개 계정 로드됨",
+    "show_emails": "이메일 표시",
+    "hide_emails": "이메일 숨기기",
     "search_label": "계정 검색",
     "search_placeholder": "파일명 또는 이메일로 검색",
     "search_empty_title": "일치하는 계정 없음",

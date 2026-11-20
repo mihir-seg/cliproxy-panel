@@ -1627,6 +1627,18 @@
     "hide_details": "隱藏詳情"
   },
   "quota_management": {
+    "pool_title": "額度池",
+    "pool_accounts": "{{count}} 個帳號",
+    "pool_weekly": "每週限額",
+    "pool_waiting": "正在檢查帳號…",
+    "pool_of": "/ {{capacity}}",
+    "pool_next_reset": "下次重置",
+    "pool_full": "額度池已滿",
+    "pool_session": "5 小時餘量",
+    "pool_session_value": "{{available}} / {{total}} 個帳號",
+    "pool_partial": "已載入 {{loaded}} / {{total}} 個帳號",
+    "show_emails": "顯示電子郵件",
+    "hide_emails": "隱藏電子郵件",
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",
     "search_empty_title": "沒有符合的帳號",

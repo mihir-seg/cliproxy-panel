@@ -1619,6 +1619,18 @@
     "hide_details": "Скрыть подробности"
   },
   "quota_management": {
+    "pool_title": "Общий лимит",
+    "pool_accounts": "Аккаунтов: {{count}}",
+    "pool_weekly": "Недельный лимит",
+    "pool_waiting": "Проверяем аккаунты…",
+    "pool_of": "из {{capacity}}",
+    "pool_next_reset": "Следующий сброс",
+    "pool_full": "Лимит полностью доступен",
+    "pool_session": "Запас на 5 часов",
+    "pool_session_value": "{{available}} из {{total}} аккаунтов",
+    "pool_partial": "Загружено {{loaded}} из {{total}} аккаунтов",
+    "show_emails": "Показать email",
+    "hide_emails": "Скрыть email",
     "search_label": "Поиск аккаунтов",
     "search_placeholder": "Поиск по имени файла или электронной почте",
     "search_empty_title": "Аккаунты не найдены",

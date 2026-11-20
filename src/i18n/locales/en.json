@@ -1606,6 +1606,18 @@
     "hide_details": "Hide details"
   },
   "quota_management": {
+    "pool_title": "Pooled quota",
+    "pool_accounts": "{{count}} accounts",
+    "pool_weekly": "Weekly limit",
+    "pool_waiting": "Checking accounts…",
+    "pool_of": "of {{capacity}}",
+    "pool_next_reset": "Next reset",
+    "pool_full": "Pool is full",
+    "pool_session": "5-hour room",
+    "pool_session_value": "{{available}} of {{total}} accounts",
+    "pool_partial": "{{loaded}} of {{total}} accounts loaded",
+    "show_emails": "Show emails",
+    "hide_emails": "Hide emails",
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",
     "search_empty_title": "No matching accounts",

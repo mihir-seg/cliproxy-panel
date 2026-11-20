@@ -1562,6 +1562,18 @@
     "hide_details": "Ẩn chi tiết"
   },
   "quota_management": {
+    "pool_title": "Hạn mức gộp",
+    "pool_accounts": "{{count}} tài khoản",
+    "pool_weekly": "Giới hạn hằng tuần",
+    "pool_waiting": "Đang kiểm tra tài khoản…",
+    "pool_of": "trên {{capacity}}",
+    "pool_next_reset": "Lần đặt lại tiếp theo",
+    "pool_full": "Hạn mức còn đầy",
+    "pool_session": "Dư địa 5 giờ",
+    "pool_session_value": "{{available}} / {{total}} tài khoản",
+    "pool_partial": "Đã tải {{loaded}} / {{total}} tài khoản",
+    "show_emails": "Hiện email",
+    "hide_emails": "Ẩn email",
     "title": "Quản lý Quota",
     "refresh_all_credentials": "Làm mới mọi credential",
     "sort_label": "Sắp xếp",

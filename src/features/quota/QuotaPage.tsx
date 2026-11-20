@@ -29,6 +29,8 @@ import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
 import { QuotaTimeline } from './components/QuotaTimeline';
+import { QuotaPoolSummary } from './components/QuotaPoolSummary';
+import { buildQuotaPools, maskEmails } from './pool';
 import {
   CARD_ENTRANCE_BUDGET_MS,
   QUOTA_CARD_LAYOUT_KEY,
@@ -71,6 +73,16 @@ const SKELETON_CARD_COUNT = 6;
  * identity-aware display label. Keep the filename fallback stable for memoization.
  */
 const displayNameFor = (name: string) => name;
+const maskedDisplayNameFor = (name: string) => maskEmails(name);
+
+const SHOW_EMAILS_KEY = 'quotaPage.showEmails';
+const readShowEmails = (): boolean => {
+  try {
+    return localStorage.getItem(SHOW_EMAILS_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
 
 export function QuotaPage() {
   const { t } = useTranslation();
@@ -89,6 +101,19 @@ export function QuotaPage() {
   const [layout, setLayout] = useState<CardLayout>(() => readCardLayout(QUOTA_CARD_LAYOUT_KEY));
   // Compact cards the user opened to full size; not persisted.
   const [expandedCards, setExpandedCards] = useState<ReadonlySet<string>>(() => new Set());
+  // Emails stay hidden unless asked for, so the page is safe to screenshot or share.
+  const [showEmails, setShowEmails] = useState(readShowEmails);
+  const handleToggleEmails = useCallback(() => {
+    setShowEmails((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem(SHOW_EMAILS_KEY, next ? '1' : '0');
+      } catch {
+        /* storage unavailable: keep the choice for this visit only */
+      }
+      return next;
+    });
+  }, []);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
@@ -285,6 +310,43 @@ export function QuotaPage() {
   /* ---------- 加载与操作 ---------- */
 
   const { batchLoading, loadQuota } = useQuotaBatchLoader();
+
+  /* ---------- Pool summary ----------
+   * Pools span every tab and page: the question is how much is left overall. */
+  const poolNow = useNow();
+  const pools = useMemo(
+    () =>
+      buildQuotaPools(
+        entries,
+        getQuota,
+        (entry) => getQuotaCacheKey(entry.file),
+        (entry) => (showEmails ? entry.file.name : maskEmails(entry.file.name)),
+        poolNow
+      ),
+    [entries, getQuota, showEmails, poolNow]
+  );
+
+  // Check every account once per session on entry, so the pool has numbers without a click.
+  // Later visits in the same session reuse the cache; "Refresh all" stays the manual path.
+  const autoLoadedSessionRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (disableControls || loading || error || filesGeneration !== sessionGeneration) return;
+    if (autoLoadedSessionRef.current === sessionGeneration) return;
+    autoLoadedSessionRef.current = sessionGeneration;
+    const unloaded = entries.filter(
+      (entry) => !entry.file.disabled && getQuota(entry)?.status !== 'success'
+    );
+    void loadQuota(unloaded.slice(0, QUOTA_PAGE_SIZE));
+  }, [
+    disableControls,
+    entries,
+    error,
+    filesGeneration,
+    getQuota,
+    loadQuota,
+    loading,
+    sessionGeneration,
+  ]);
   const { resettingQuotaName, refreshQuota, resetQuota } = useQuotaActions(disableControls);
 
   const pendingRefreshRef = useRef<number | null>(null);
@@ -373,6 +435,7 @@ export function QuotaPage() {
             : undefined
         }
         glance={layout === 'compact' ? !expandedCards.has(key) : undefined}
+        maskNames={!showEmails}
         onToggleGlance={() => toggleExpandedCard(key)}
         onRefresh={() => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
         onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
@@ -390,8 +453,12 @@ export function QuotaPage() {
         attentionCount={attentionCount}
         refreshing={loading || batchLoading}
         disableControls={disableControls}
+        showEmails={showEmails}
+        onToggleEmails={handleToggleEmails}
         onRefreshAll={handleRefreshAll}
       />
+
+      <QuotaPoolSummary pools={pools} now={poolNow} resolvedTheme={resolvedTheme} />
 
       <section className={styles.workbench}>
         {/* 提供商导航与搜索工具栏分层，避免不同控件争夺视觉焦点。 */}
@@ -532,7 +599,7 @@ export function QuotaPage() {
         <QuotaTimeline
           entries={pageItems}
           quotaFor={getQuota}
-          displayNameFor={displayNameFor}
+          displayNameFor={showEmails ? displayNameFor : maskedDisplayNameFor}
           resolvedTheme={resolvedTheme}
         />
       </section>

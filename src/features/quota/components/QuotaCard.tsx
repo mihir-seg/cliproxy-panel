@@ -5,6 +5,7 @@
 
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { maskEmails } from '../pool';
 import { IconChevronDown, IconRefreshCw } from '@/components/ui/icons';
 import type { ClaudeQuotaState, CodexQuotaState, ResolvedTheme } from '@/types';
 import { resolveQuotaErrorMessage } from '@/utils/quota';
@@ -47,6 +48,8 @@ export type QuotaCardProps = {
   onToggleGlance?: () => void;
   /** Codex only: credentials in the panel sharing this account user's credit setting. */
   creditOverageSharedCount?: number;
+  /** Hide the email inside the credential name (screenshots, screen sharing). */
+  maskNames?: boolean;
   onRefresh: () => void;
   onReset: () => void;
 };
@@ -62,6 +65,7 @@ export function QuotaCard(props: QuotaCardProps) {
     glance,
     onToggleGlance,
     creditOverageSharedCount = 1,
+    maskNames = false,
     onRefresh,
     onReset,
   } = props;
@@ -70,7 +74,7 @@ export function QuotaCard(props: QuotaCardProps) {
   const file = entry.file;
   const retainedClaudeUsage =
     entry.type === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
-  const displayName = getQuotaDisplayName(file);
+  const displayName = maskNames ? maskEmails(getQuotaDisplayName(file)) : getQuotaDisplayName(file);
 
   // Capture the entrance delay only at mount, without a render-time ref read.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);

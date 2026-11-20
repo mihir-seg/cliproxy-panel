@@ -1606,6 +1606,18 @@
     "hide_details": "Ayrıntıları Gizle"
   },
   "quota_management": {
+    "pool_title": "Toplam kota",
+    "pool_accounts": "{{count}} hesap",
+    "pool_weekly": "Haftalık limit",
+    "pool_waiting": "Hesaplar kontrol ediliyor…",
+    "pool_of": "/ {{capacity}}",
+    "pool_next_reset": "Sonraki sıfırlama",
+    "pool_full": "Kota dolu",
+    "pool_session": "5 saatlik pay",
+    "pool_session_value": "{{total}} hesaptan {{available}}",
+    "pool_partial": "{{total}} hesaptan {{loaded}} yüklendi",
+    "show_emails": "E-postaları göster",
+    "hide_emails": "E-postaları gizle",
     "search_label": "Hesap Ara",
     "search_placeholder": "Dosya Adına veya E-postaya Göre Ara",
     "search_empty_title": "Eşleşen Hesap Yok",
