@@ -135,7 +135,7 @@
     font-variant-numeric: tabular-nums;
     color: var(--text-primary);
     min-width: 0;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
   }
 }
 

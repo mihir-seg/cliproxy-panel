@@ -87,13 +87,12 @@ export function QuotaPoolSummary({ pools, now, resolvedTheme }: QuotaPoolSummary
                     <dt>{t('quota_management.pool_next_reset')}</dt>
                     <dd>
                       {reset && pool.nextReset ? (
-                        <>
+                        <span title={reset.absolute}>
                           <span className={styles.regain}>
                             +{formatPercent(pool.nextReset.regain)}
                           </span>{' '}
                           {reset.relative ?? reset.absolute}
-                          <span className={styles.muted}> · {reset.absolute}</span>
-                        </>
+                        </span>
                       ) : (
                         <span className={styles.muted}>{t('quota_management.pool_full')}</span>
                       )}

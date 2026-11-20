@@ -20,18 +20,14 @@ export const POOLED_PROVIDERS: readonly QuotaProviderType[] = ['claude', 'codex'
 interface PoolWindowSpec {
   /** Window ids tried in order; the first one any loaded account reports becomes the pool basis. */
   primary: readonly string[];
-  /** Overall weekly window shown under the primary when the primary is model-scoped. */
+  /** Optional second weekly window to show under the primary (unused for Claude: Fable is what binds). */
   secondary?: string;
   /** The rolling short window used for the "available right now" count. */
   session: string;
 }
 
 const POOL_WINDOWS: Partial<Record<QuotaProviderType, PoolWindowSpec>> = {
-  claude: {
-    primary: ['seven-day-fable', 'seven-day'],
-    secondary: 'seven-day',
-    session: 'five-hour',
-  },
+  claude: { primary: ['seven-day-fable', 'seven-day'], session: 'five-hour' },
   codex: { primary: ['weekly'], session: 'five-hour' },
 };
 

@@ -41,7 +41,7 @@ describe('buildQuotaPools', () => {
     expect(pool.nextReset).toEqual({ atMs: NOW + 8 * HOUR, regain: 53 });
   });
 
-  test('prefers the Fable weekly window and shows the overall weekly one beside it', () => {
+  test('pools on the Fable weekly window only', () => {
     const [pool] = pools([a, b], {
       'claude-a.json': ok([
         { id: 'seven-day', usedPercent: 20, resetAtMs: NOW + HOUR },
@@ -52,7 +52,7 @@ describe('buildQuotaPools', () => {
     expect(pool.primaryWindowId).toBe('seven-day-fable');
     expect(pool.capacity).toBe(100); // only one account reports Fable
     expect(pool.remaining).toBe(60);
-    expect(pool.secondary).toMatchObject({ remaining: 80 + 90, capacity: 200 });
+    expect(pool.secondary).toBeNull();
   });
 
   test('counts accounts with 5-hour room and ignores past resets', () => {
