@@ -34,14 +34,14 @@ export function QuotaPoolSummary({ pools, now, resolvedTheme }: QuotaPoolSummary
     <section className={styles.summary} aria-label={t('quota_management.pool_title')}>
       {pools.map((pool) => {
         const icon = getAuthFileIcon(pool.type, resolvedTheme);
-        const label = pool.primaryLabelKey ? t(pool.primaryLabelKey) : pool.primaryLabel;
+        const label = pool.labelKey ? t(pool.labelKey) : pool.label;
         const reset = pool.nextReset
           ? buildResetDisplay(null, pool.nextReset.atMs, now, i18n.language)
           : null;
         const waiting = pool.loadedCount === 0;
 
         return (
-          <article key={pool.type} className={styles.card}>
+          <article key={pool.key} className={styles.card}>
             <header className={styles.cardHeader}>
               <span className={styles.provider}>
                 {icon && <img src={icon} alt="" width={18} height={18} className={styles.icon} />}
@@ -106,24 +106,6 @@ export function QuotaPoolSummary({ pools, now, resolvedTheme }: QuotaPoolSummary
                           available: pool.sessionAvailable,
                           total: pool.sessionReported,
                         })}
-                      </dd>
-                    </div>
-                  )}
-                  {pool.secondary && (
-                    <div className={styles.fact}>
-                      <dt>
-                        {pool.secondary.labelKey
-                          ? t(pool.secondary.labelKey)
-                          : pool.secondary.label}
-                      </dt>
-                      <dd>
-                        {formatPercent(pool.secondary.remaining)}
-                        <span className={styles.muted}>
-                          {' '}
-                          {t('quota_management.pool_of', {
-                            capacity: formatPercent(pool.secondary.capacity),
-                          })}
-                        </span>
                       </dd>
                     </div>
                   )}

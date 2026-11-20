@@ -1,5 +1,5 @@
 /**
- * Pooled quota across every account of one provider.
+ * Pooled quota across every account of one provider, one card per weekly window.
  *
  * Accounts are interchangeable behind the proxy, so the useful question is "how much is left in
  * the whole pool, and when does more come back?" — not each account in isolation. Each account
@@ -18,21 +18,16 @@ import type { QuotaProviderType } from './providers/types';
 export const POOLED_PROVIDERS: readonly QuotaProviderType[] = ['claude', 'codex'];
 
 interface PoolWindowSpec {
-  /** Window ids tried in order; the first one any loaded account reports becomes the pool basis. */
-  primary: readonly string[];
-  /** Overall weekly window shown under the primary when the primary is model-scoped. */
-  secondary?: string;
+  /** Each window any loaded account reports gets its own pool card, in this order. */
+  windows: readonly string[];
   /** The rolling short window used for the "available right now" count. */
   session: string;
 }
 
 const POOL_WINDOWS: Partial<Record<QuotaProviderType, PoolWindowSpec>> = {
-  claude: {
-    primary: ['seven-day-fable', 'seven-day'],
-    secondary: 'seven-day',
-    session: 'five-hour',
-  },
-  codex: { primary: ['weekly'], session: 'five-hour' },
+  // Fable binds first, but the overall weekly limit can still run out: both get a card.
+  claude: { windows: ['seven-day-fable', 'seven-day'], session: 'five-hour' },
+  codex: { windows: ['weekly'], session: 'five-hour' },
 };
 
 interface PoolableWindow {
@@ -47,7 +42,7 @@ export interface PoolSegment {
   /** Cache key of the account, stable across refreshes. */
   key: string;
   name: string;
-  /** Remaining percentage of the pool's primary window, 0–100. */
+  /** Remaining percentage of the pool's window, 0–100. */
   remaining: number;
 }
 
@@ -58,21 +53,22 @@ export interface PoolReset {
 }
 
 export interface QuotaPool {
+  /** Unique per card: provider and window. */
+  key: string;
   type: QuotaProviderType;
   /** Accounts of this provider that are enabled, loaded or not. */
   accountCount: number;
-  /** Accounts that reported the primary window. */
+  /** Accounts that reported this pool's window. */
   loadedCount: number;
-  primaryWindowId: string;
-  primaryLabelKey?: string;
-  primaryLabel?: string;
+  windowId: string;
+  labelKey?: string;
+  label?: string;
   /** Sum of remaining percentages across loaded accounts. */
   remaining: number;
   /** loadedCount × 100. */
   capacity: number;
   segments: PoolSegment[];
   nextReset: PoolReset | null;
-  secondary: { labelKey?: string; label?: string; remaining: number; capacity: number } | null;
   /** Loaded accounts whose short window still has room (below 100% used). */
   sessionAvailable: number;
   sessionReported: number;
@@ -90,7 +86,8 @@ const findWindow = (windows: PoolableWindow[], id: string) =>
   windows.find((window) => window.id === id && typeof window.usedPercent === 'number');
 
 /**
- * Build one pool per pooled provider that has at least one enabled account.
+ * Build one pool card per reported window of each pooled provider with enabled accounts.
+ * Before any account has loaded, a provider shows a single waiting card for its last window.
  * `now` is injected so resets in the past are ignored deterministically.
  */
 export function buildQuotaPools(
@@ -108,39 +105,14 @@ export function buildQuotaPools(
     if (!spec || accounts.length === 0) continue;
 
     const loaded = accounts.map((entry) => ({ entry, windows: windowsOf(quotaFor(entry)) }));
-    const primaryId =
-      spec.primary.find((id) => loaded.some(({ windows }) => findWindow(windows, id))) ??
-      spec.primary[spec.primary.length - 1];
+    const reported = spec.windows.filter((id) =>
+      loaded.some(({ windows }) => findWindow(windows, id))
+    );
+    const windowIds = reported.length > 0 ? reported : [spec.windows[spec.windows.length - 1]];
 
-    const segments: PoolSegment[] = [];
-    let labelSource: PoolableWindow | undefined;
-    let nextReset: PoolReset | null = null;
-    let secondaryRemaining = 0;
-    let secondaryCount = 0;
-    let secondarySource: PoolableWindow | undefined;
     let sessionAvailable = 0;
     let sessionReported = 0;
-
-    for (const { entry, windows } of loaded) {
-      const primary = findWindow(windows, primaryId);
-      if (primary) {
-        labelSource ??= primary;
-        const used = clampPercent(primary.usedPercent as number);
-        segments.push({ key: keyFor(entry), name: nameFor(entry), remaining: 100 - used });
-        const at = primary.resetAtMs;
-        if (typeof at === 'number' && at > now && used > 0) {
-          if (!nextReset || at < nextReset.atMs) nextReset = { atMs: at, regain: used };
-          else if (at === nextReset.atMs) nextReset = { atMs: at, regain: nextReset.regain + used };
-        }
-      }
-      if (spec.secondary && spec.secondary !== primaryId) {
-        const secondary = findWindow(windows, spec.secondary);
-        if (secondary) {
-          secondarySource ??= secondary;
-          secondaryRemaining += 100 - clampPercent(secondary.usedPercent as number);
-          secondaryCount += 1;
-        }
-      }
+    for (const { windows } of loaded) {
       const session = findWindow(windows, spec.session);
       if (session) {
         sessionReported += 1;
@@ -148,29 +120,40 @@ export function buildQuotaPools(
       }
     }
 
-    pools.push({
-      type,
-      accountCount: accounts.length,
-      loadedCount: segments.length,
-      primaryWindowId: primaryId,
-      primaryLabelKey: labelSource?.labelKey,
-      primaryLabel: labelSource?.label,
-      remaining: segments.reduce((sum, segment) => sum + segment.remaining, 0),
-      capacity: segments.length * 100,
-      segments,
-      nextReset,
-      secondary:
-        secondaryCount > 0
-          ? {
-              labelKey: secondarySource?.labelKey,
-              label: secondarySource?.label,
-              remaining: secondaryRemaining,
-              capacity: secondaryCount * 100,
-            }
-          : null,
-      sessionAvailable,
-      sessionReported,
-    });
+    for (const windowId of windowIds) {
+      const segments: PoolSegment[] = [];
+      let labelSource: PoolableWindow | undefined;
+      let nextReset: PoolReset | null = null;
+
+      for (const { entry, windows } of loaded) {
+        const window = findWindow(windows, windowId);
+        if (!window) continue;
+        labelSource ??= window;
+        const used = clampPercent(window.usedPercent as number);
+        segments.push({ key: keyFor(entry), name: nameFor(entry), remaining: 100 - used });
+        const at = window.resetAtMs;
+        if (typeof at === 'number' && at > now && used > 0) {
+          if (!nextReset || at < nextReset.atMs) nextReset = { atMs: at, regain: used };
+          else if (at === nextReset.atMs) nextReset = { atMs: at, regain: nextReset.regain + used };
+        }
+      }
+
+      pools.push({
+        key: `${type}:${windowId}`,
+        type,
+        accountCount: accounts.length,
+        loadedCount: segments.length,
+        windowId,
+        labelKey: labelSource?.labelKey,
+        label: labelSource?.label,
+        remaining: segments.reduce((sum, segment) => sum + segment.remaining, 0),
+        capacity: segments.length * 100,
+        segments,
+        nextReset,
+        sessionAvailable,
+        sessionReported,
+      });
+    }
   }
 
   return pools;

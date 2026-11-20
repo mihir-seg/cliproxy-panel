@@ -41,18 +41,28 @@ describe('buildQuotaPools', () => {
     expect(pool.nextReset).toEqual({ atMs: NOW + 8 * HOUR, regain: 53 });
   });
 
-  test('prefers the Fable weekly window and shows the overall weekly one beside it', () => {
-    const [pool] = pools([a, b], {
+  test('gives the Fable weekly limit and the overall weekly limit separate cards', () => {
+    const result = pools([a, b], {
       'claude-a.json': ok([
         { id: 'seven-day', usedPercent: 20, resetAtMs: NOW + HOUR },
         { id: 'seven-day-fable', usedPercent: 40, resetAtMs: NOW + 2 * HOUR },
       ]),
       'claude-b.json': ok([{ id: 'seven-day', usedPercent: 10, resetAtMs: NOW + HOUR }]),
     });
-    expect(pool.primaryWindowId).toBe('seven-day-fable');
-    expect(pool.capacity).toBe(100); // only one account reports Fable
-    expect(pool.remaining).toBe(60);
-    expect(pool.secondary).toMatchObject({ remaining: 80 + 90, capacity: 200 });
+    expect(result.map((pool) => pool.key)).toEqual(['claude:seven-day-fable', 'claude:seven-day']);
+    const [fable, weekly] = result;
+    expect(fable.capacity).toBe(100); // only one account reports Fable
+    expect(fable.remaining).toBe(60);
+    expect(fable.nextReset).toEqual({ atMs: NOW + 2 * HOUR, regain: 40 });
+    expect(weekly.capacity).toBe(200);
+    expect(weekly.remaining).toBe(80 + 90);
+    expect(weekly.nextReset).toEqual({ atMs: NOW + HOUR, regain: 30 });
+  });
+
+  test('shows one waiting card before any account has loaded', () => {
+    const result = pools([a, b], {});
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ windowId: 'seven-day', loadedCount: 0, capacity: 0 });
   });
 
   test('counts accounts with 5-hour room and ignores past resets', () => {
@@ -103,7 +113,7 @@ describe('buildQuotaPools', () => {
     });
     expect(pool.type).toBe('codex');
     expect(pool.remaining).toBe(83);
-    expect(pool.secondary).toBeNull();
+    expect(pool.key).toBe('codex:weekly');
   });
 });
 
